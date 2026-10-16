@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="ru" class="dark scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Valorant Aim Guide/Tracker</title>
+    <meta name="description" content="Система тренировки аима в Valorant: KovaaK, Стрельбище, Deathmatch, интерактивный трекер прогресса." />
+    <link rel="preconnect" href="https://fonts.googleapis.com"> <!-- Беру шрифты здесь для более легкого создания бекенда и чтобы ии не тупил и развернуть не только html но и полноценным файлом -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> <!-- Inter - для текста, Chakra Petch - для заголовков, JetBrains Mono - для цифр -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      } 
+      html {
+        color-scheme: dark;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: var(--bg-main, #090b10);
+        color: var(--text-main, #f5f5f5);
+        line-height: 1.6;
+        scroll-behavior: smooth;
+      }
+      .font-heading { font-family: 'Chakra Petch', sans-serif; }
+      .font-mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+      /* BG задний фон короче */
+      .bg-grid {
+        background-image: 
+          linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+          linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+        background-size: 48px 48px;
+      }
+      .hero-glow {
+        background: radial-gradient(circle 700px at 50% 25%, rgba(255, 70, 85, 0.14), transparent 70%);
+      }
+
+      /* Переходы и анимации? pulse.dot некоректно отображается */
+      .card-hover {
+        transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+        transform-style: preserve-3d;
+        will-change: transform;
+      }
+      .card-hover:hover {
+        transform: translateY(-4px);
+      }
+      .pulse-dot {
+        animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.85); }
+      }
+    </style>
+    <!-- Tailwind CSS CDN подключение фреймворка который собирает css классы, я ленивый вот он и делает за меня + не нужен Node.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              valRed: '#ff4655',
+              valCyan: '#00f0ff'
+            }
+          }
+        }
+      }
+    </script>
+    <script src="js/main.js" defer onerror = null; this.src = 'main.js';></script>
+  </head>
+  <body class="bg-[#090b10] text-neutral-100 antialiased selection:bg-[#ff4655] selection:text-white overflow-x-hidden">
+
+    <!-- Верхний индикатор прокрутки, он крутой -->
+    <div id="scrollProgress" class="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#ff4655] via-[#00f0ff] to-emerald-400 origin-left z-50 pointer-events-none" style="transform: scaleX(0);"></div>
+
+    <!-- Верхняя строка сайта / Его Шапка -->
+    <header class="sticky top-0 z-40 w-full border-b border-neutral-800/80 bg-[#0a0c10]/90 backdrop-blur-md">
+      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <a href="#hero" class="flex items-center gap-2.5 text-base font-bold tracking-tight text-white transition-opacity hover:opacity-90">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff4655] text-white shadow-lg shadow-[#ff4655]/25">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <span class="font-heading text-lg font-bold tracking-wider">VALORANT<span class="text-[#ff4655]">AimHelper</span></span>
+        </a>
+
+        <nav id="topNav" class="hidden items-center gap-6 text-xs font-semibold uppercase tracking-wider text-neutral-300 md:flex">
+          <a href="#kovaak" data-nav="kovaak" class="transition-colors hover:text-[#ff4655]">1. KovaaK</a>
+          <a href="#range" data-nav="range" class="transition-colors hover:text-[#00f0ff]">2. Стрельбище</a>
+          <a href="#deathmatch" data-nav="deathmatch" class="transition-colors hover:text-emerald-400">3. Deathmatch</a>
+          <a href="#progress" data-nav="progress" class="transition-colors hover:text-white">4. Прогресс & Календарь</a>
+        </nav>
+
+        <div class="hidden items-center gap-2.5 sm:flex">
+          <button type="button" id="soundToggleBtn" onclick="toggleSound()" class="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700/80 bg-neutral-800/60 text-neutral-300 transition-colors hover:border-[#ff4655] hover:text-white" title="Звуковые эффекты UI">
+            <svg id="soundOnIcon" class="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <svg id="soundOffIcon" class="h-4 w-4 text-neutral-500 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          </button>
+          <button type="button" onclick="openTimerModal()" class="flex items-center gap-1.5 rounded-lg border border-neutral-700/80 bg-neutral-800/60 px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors hover:border-[#ff4655] hover:text-white">
+            <svg class="h-3.5 w-3.5 text-[#ff4655]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="14" r="8"/><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/></svg>
+            <span>Таймер</span>
+          </button>
+          <button type="button" onclick="openSensModal()" class="flex items-center gap-1.5 rounded-lg border border-neutral-700/80 bg-neutral-800/60 px-3 py-1.5 text-xs font-medium text-neutral-200 transition-colors hover:border-[#00f0ff] hover:text-white">
+            <svg class="h-3.5 w-3.5 text-[#00f0ff]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/></svg>
+            <span>eDPI</span>
+          </button>
+          <button type="button" onclick="openSurveyModal()" class="flex items-center gap-1.5 rounded-lg bg-[#ff4655] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-[#ff4655]/30 hover:bg-[#ff5866] transition-all active:scale-95">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>Анкета</span>
+          </button>
+        </div>
+
+        <div class="flex sm:hidden items-center gap-2">
+          <button type="button" onclick="openSurveyModal()" class="flex items-center gap-1 rounded-lg bg-[#ff4655] px-3 py-1.5 text-xs font-bold text-white shadow">
+            <span>Анкета</span>
+          </button>
+          <button type="button" onclick="toggleMobileMenu()" class="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800 hover:text-white" aria-label="Меню">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="mobileMenu" class="hidden border-t border-neutral-800 bg-[#0c0f16] px-4 py-4 md:hidden">
+        <nav class="flex flex-col gap-3 text-xs font-semibold uppercase tracking-wider text-neutral-300">
+          <a href="#kovaak" onclick="toggleMobileMenu()" class="py-1 hover:text-[#ff4655]">1. KovaaK</a>
+          <a href="#range" onclick="toggleMobileMenu()" class="py-1 hover:text-[#00f0ff]">2. Стрельбище</a>
+          <a href="#deathmatch" onclick="toggleMobileMenu()" class="py-1 hover:text-emerald-400">3. Deathmatch</a>
+          <a href="#progress" onclick="toggleMobileMenu()" class="py-1 hover:text-white">4. Прогресс & Календарь</a>
+        </nav>
+        <div class="mt-4 flex gap-2 border-t border-neutral-800/80 pt-3">
+          <button type="button" onclick="openTimerModal(); toggleMobileMenu();" class="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 py-2 text-center text-xs font-semibold text-neutral-200">Таймер</button>
+          <button type="button" onclick="openSensModal(); toggleMobileMenu();" class="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 py-2 text-center text-xs font-semibold text-neutral-200">eDPI</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="w-full flex-1">
+      <!-- HERO СЕКЦИЯ -->
+      <section id="hero" class="relative overflow-hidden bg-[#090b10] py-16 sm:py-24 text-neutral-100 bg-grid hero-glow">
+        <div class="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center z-10">
+          <div class="inline-flex items-center gap-2 rounded-full border border-neutral-700/80 bg-neutral-900/80 px-4 py-1.5 text-xs font-semibold text-neutral-200 shadow-md backdrop-blur-md">
+            <div class="flex h-4 w-4 items-center justify-center rounded-full bg-[#ff4655]/20 text-[#ff4655]">
+              <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
+            <span class="tracking-wide">VALORANT AIM PROTOCOL</span>
+          </div>
+
+          <h1 class="mt-6 font-heading text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.12]">
+            Как правильно тренировать аим в Валорант <!-- В общем я накосячил с шрифтом, поэтому валорант здесь по русски -->
+            <span class="bg-gradient-to-r from-[#ff4655] via-[#ff6b78] to-[#00f0ff] bg-clip-text text-transparent block mt-1">для стабильного роста ранга</span> <!-- Крутой градиент -->
+          </h1>
+
+          <p class="mx-auto mt-5 max-w-2xl text-sm sm:text-base text-neutral-300 leading-relaxed font-normal">
+            Пошаговая методика из 3 этапов: <strong>KovaaK</strong> (15 мин), контр-стрейф на <strong>Стрельбище</strong> (10 мин) и закрепление в <strong>Deathmatch</strong> (10 мин).
+          </p>
+
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <button type="button" onclick="openSurveyModal()" class="flex items-center justify-center gap-2 rounded-xl bg-[#ff4655] px-6 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-[#ff4655]/30 transition-all hover:bg-[#ff5866] hover:shadow-xl hover:shadow-[#ff4655]/40 active:scale-95">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+              <span>Заполнить анкету</span>
+            </button>
+            <button type="button" onclick="openTimerModal()" class="flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-[#141822] px-5 py-3.5 text-sm font-semibold text-neutral-200 shadow transition-all hover:border-[#ff4655] hover:text-white hover:bg-[#181d2a] active:scale-95">
+              <svg class="h-4 w-4 text-[#ff4655]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="14" r="8"/><line x1="12" x2="15" y1="14" y2="11"/></svg>
+              <span>Запустить таймер</span>
+            </button>
+            <button type="button" onclick="openSensModal()" class="flex items-center justify-center gap-2 rounded-xl border border-neutral-700 bg-[#141822] px-5 py-3.5 text-sm font-semibold text-neutral-200 shadow transition-all hover:border-[#00f0ff] hover:text-white hover:bg-[#181d2a] active:scale-95">
+              <svg class="h-4 w-4 text-[#00f0ff]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/></svg>
+              <span>Калькулятор eDPI</span>
+            </button>
+          </div>
+
+          <!-- Метрики и прочая чушь -->
+          <div class="mt-8 mx-auto max-w-2xl rounded-xl border border-neutral-800/80 bg-[#10131b]/80 p-4 backdrop-blur-md grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+            <div>
+              <div class="font-mono text-xl sm:text-2xl font-extrabold text-white counter" data-target="35" data-suffix=" мин">35 мин</div>
+              <div class="text-[12px] text-neutral-400">В день на тренировку</div>
+            </div>
+            <div onclick="openReactionModal()" class="group cursor-pointer rounded-lg p-1 transition-colors hover:bg-neutral-800/50" title="Нажмите, чтобы измерить свою реакцию!">
+              <div class="font-mono text-xl sm:text-2xl font-extrabold text-[#00f0ff] group-hover:underline flex items-center justify-center gap-1">
+                <span>&lt; 190 мс</span>
+                <span class="text-[10px] uppercase font-bold text-black bg-[#00f0ff] px-1 py-0.2 rounded font-sans">Тест</span>
+              </div>
+              <div class="text-[12px] text-neutral-400 group-hover:text-white">Время Вашей реакции ⚡</div>
+            </div>
+
+            <div>
+              <div class="font-mono text-xl sm:text-2xl font-extrabold text-emerald-400 counter" data-target="2" data-prefix="+" data-suffix=" ранга">+2 ранга</div>
+              <div class="text-[12px] text-neutral-400">За месяц!</div>
+            </div>
+          </div>
+
+          <!-- Карточки 3-ёх этапов -->
+          <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+            <a href="#kovaak" class="group card-hover relative rounded-2xl border border-neutral-800 bg-[#12151f] p-5 shadow-lg hover:border-[#ff4655]/50 hover:bg-[#151926]">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-bold text-[#ff4655]">ЧАСТЬ 1 // 15 МИН</span>
+              </div>
+              <div class="mt-2 font-heading text-base font-bold text-white group-hover:text-[#ff4655] transition-colors">KovaaK Aim Trainer</div>
+              <p class="mt-1.5 text-xs text-neutral-400 leading-relaxed">Тренировка в приложении KovaaK</p>
+            </a>
+            <a href="#range" class="group card-hover relative rounded-2xl border border-neutral-800 bg-[#12151f] p-5 shadow-lg hover:border-[#00f0ff]/50 hover:bg-[#151926]">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-bold text-[#00f0ff]">ЧАСТЬ 2 // 10 МИН</span>
+              </div>
+              <div class="mt-2 font-heading text-base font-bold text-white group-hover:text-[#00f0ff] transition-colors">Стрельбище в игре</div>
+              <p class="mt-1.5 text-xs text-neutral-400 leading-relaxed">Крутая тема чтобы размяться в игре</p>
+            </a>
+            <a href="#deathmatch" class="group card-hover relative rounded-2xl border border-neutral-800 bg-[#12151f] p-5 shadow-lg hover:border-emerald-500/50 hover:bg-[#151926]">
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs font-bold text-emerald-400">ЧАСТЬ 3 // 10 МИН</span>
+                <span class="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-400">Автозапуск</span>
+              </div>
+              <div class="mt-2 font-heading text-base font-bold text-white group-hover:text-emerald-400 transition-colors">Deathmatch</div>
+              <p class="mt-1.5 text-xs text-neutral-400 leading-relaxed">Я не знаю что здесь писать</p>
+            </a>
+          </div>
+        </div>
+      </section>
+  <!-- Разделитель 1: KovaaK -->
+  <div class="relative w-full overflow-hidden py-6 select-none">
+    <div class="relative mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+      <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+      <div class="relative h-[1px] flex-1 bg-gradient-to-r from-[#ff4655]/60 via-neutral-700 to-transparent"></div>
+      <div class="mx-4 flex items-center gap-2 rounded-lg border border-neutral-800 bg-[#121620] px-4 py-1.5 shadow-lg">
+        <span class="font-mono text-xs font-bold tracking-wider text-[#ff4655]">ЧАСТЬ 1</span>
+        <span class="text-neutral-600">/</span>
+        <span class="font-heading text-xs font-bold uppercase tracking-wider text-neutral-200">Тренировка аима в KovaaK</span>
+      </div>
+      <div class="relative h-[1px] flex-1 bg-gradient-to-l from-[#ff4655]/60 via-neutral-700 to-transparent"></div>
+      <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+    </div>
+  </div>
+
+  <!-- ЧАСТЬ 1: KOVAAK -->
+  <section id="kovaak" class="w-full relative bg-[#131622] py-14 text-neutral-100 sm:py-20">
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
+        
+        <div class="lg:col-span-6 space-y-5">
+          <div>
+            <div class="inline-flex items-center gap-1.5 rounded-full bg-[#ff4655]/15 border border-[#ff4655]/30 px-3 py-1 font-mono text-xs font-semibold text-[#ff4655]">
+              <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+              <span>ЭТАП 1:</span>
+            </div>
+            <h2 class="mt-3 font-heading text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              Тренировка аима в приложении <span class="bg-gradient-to-r from-[#ff4655] via-[#ff6b78] to-[#00f0ff] bg-clip-text text-transparent block mt-1">KovaaK</span>
+            </h2>
+          </div>
+
+          <p class="text-sm text-neutral-300 leading-relaxed">
+            Главная цель KovaaK — изолировать физическую моторику руки без отвлечения на способности агентов, экономику раундов и шум шагов. За 15 минут вы совершаете более <strong>1,200 прицельных выстрелов</strong>.
+          </p>
+
+          <div class="space-y-2.5 rounded-xl border border-neutral-800 bg-[#0e111a] p-4 text-xs">
+            <div class="flex items-center justify-between font-bold text-white border-b border-neutral-800/80 pb-2">
+              <span>Обязательный 15-минутный плейлист:</span>
+            </div>
+            <ul class="space-y-2 text-neutral-300 max-h-72 overflow-y-auto pr-1">
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">1. VarClick Valorant</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">2. SmallFlicks Valorant Adapt</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">3. ShortStrafes Valorant</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">4. PulseShot Valorant Adapt</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">5. PeekShot Valorant Adapt</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">6. MicroShot Valorant Adapt</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">7. ControlStrafes Valorant Adapt</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">8. Consecutive Tracking Valorant</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">9. Centering Valorant</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">10. Berry TS Valorant Adapt</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">11. AntiCentering Valorant</strong></div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <div><strong class="text-white">12. AngleShot Micro Valorant Adapt</strong></div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Кнопочка для копирования плейлиста -->
+          <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-800 bg-[#121622] p-3 text-xs shadow-inner">
+            <div class="min-w-0">
+              <div class="text-[10px] uppercase font-mono text-neutral-500">Код плейлиста для KovaaK:</div>
+              <div id="kovaakCodeText" class="font-mono font-bold text-emerald-400 truncate text-[11px]">KovaaKsClippingBrownBottomfrag</div>
+            </div>
+            <button type="button" onclick="copyText('KovaaKsClippingBrownBottomfrag', this)" class="flex items-center gap-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors shrink-0">
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>Скопировать</span>
+            </button>
+          </div>
+
+          <div class="pt-1 flex items-center gap-3">
+            <button type="button" onclick="openSurveyModal()" class="flex items-center gap-2 rounded-xl bg-[#ff4655] px-6 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-[#ff4655]/20 hover:bg-[#ff5866] transition-all active:scale-95">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+              <span>Заполнить анкету</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Видеоплеер KovaaK -->
+        <div class="lg:col-span-6">
+          <div class="group relative overflow-hidden rounded-2xl border border-[#ff4655]/40 bg-[#10131b] shadow-2xl shadow-[#ff4655]/10">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800/80 bg-[#131722]/90 px-4 py-2.5">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="inline-block h-2 w-2 rounded-full bg-[#ff4655] pulse-dot"></span>
+                <span class="font-heading text-xs font-bold text-white truncate">Видео: Разбор механики в KovaaK (Автозапуск)</span>
+              </div>
+              <div class="flex items-center gap-2">
+
+              </div>
+            </div>
+
+            <div class="relative aspect-video w-full bg-black">
+              <iframe id="kovaakVideoIframe" src="https://www.youtube.com/embed/Md9kkTt8o3s?autoplay=1&mute=1&playsinline=1&enablejsapi=1&loop=1&playlist=Md9kkTt8o3s&rel=0" class="h-full w-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+
+            <div class="flex items-center justify-between border-t border-neutral-800/80 bg-[#12151e] px-4 py-2 text-xs text-neutral-400">
+              <span class="font-mono text-[11px]">1080p 60 FPS • Выберите упражнение во вкладках выше</span>
+              <button type="button" onclick="copyCurrentVideoUrl('kovaakVideoIframe', this)" class="hover:text-white">YouTube URL</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+<!-- Разделитель 2: Стрельбище -->
+  <div class="relative w-full overflow-hidden py-6 select-none">
+    <div class="relative mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+      <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+      <div class="relative h-[1px] flex-1 bg-gradient-to-r from-[#00f0ff]/60 via-neutral-700 to-transparent"></div>
+      <div class="mx-4 flex items-center gap-2 rounded-lg border border-neutral-800 bg-[#121620] px-4 py-1.5 shadow-lg">
+        <span class="font-mono text-xs font-bold tracking-wider text-[#00f0ff]">ЧАСТЬ 2</span>
+        <span class="text-neutral-600">/</span>
+        <span class="font-heading text-xs font-bold uppercase tracking-wider text-neutral-200">Тренировка на стрельбище</span>
+      </div>
+      <div class="relative h-[1px] flex-1 bg-gradient-to-l from-[#00f0ff]/60 via-neutral-700 to-transparent"></div>
+      <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+    </div>
+  </div>
+      <!-- ЧАСТЬ 2: СТРЕЛЬБИЩЕ -->
+      <section id="range" class="relative bg-[#0e111a] py-14 text-neutral-100 sm:py-20">
+        <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
+            
+            <!-- Видео Стрельбища привет nats опять -->
+            <div class="lg:col-span-6 order-2 lg:order-1">
+              <div class="group relative overflow-hidden rounded-2xl border border-[#00f0ff]/40 bg-[#10131b] shadow-2xl shadow-[#00f0ff]/10">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800/80 bg-[#131722]/90 px-4 py-2.5">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-block h-2 w-2 rounded-full bg-[#00f0ff] pulse-dot"></span>
+                    <span class="font-heading text-xs font-bold text-white truncate">Видео: Стрельбище Valorant</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                  </div>
+                </div>
+
+                <div class="relative aspect-video w-full bg-black">
+                  <iframe id="rangeVideoIframe" src="https://www.youtube.com/embed/Md9kkTt8o3s?autoplay=1&mute=1&playsinline=1&enablejsapi=1&loop=1&playlist=Md9kkTt8o3s&rel=0" class="h-full w-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-neutral-800/80 bg-[#12151e] px-4 py-2 text-xs text-neutral-400">
+                  <span class="font-mono text-[11px]">Counter-Strafing & One-Taps</span>
+                  <button type="button" onclick="copyCurrentVideoUrl('rangeVideoIframe', this)" class="hover:text-white">YouTube URL</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Текст стрельбище -->
+            <div class="lg:col-span-6 order-1 lg:order-2 space-y-5">
+              <div>
+                <div class="inline-flex items-center gap-1.5 rounded-full bg-[#00f0ff]/15 border border-[#00f0ff]/30 px-3 py-1 font-mono text-xs font-semibold text-[#00f0ff]">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                  <span>ЭТАП 2:</span>
+                </div>
+                <h2 class="mt-3 font-heading text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                  Тренировки в игре через стрельбище
+                </h2>
+              </div>
+
+              <p class="text-sm text-neutral-300 leading-relaxed">
+                KovaaK развивает механику руки, но именно <strong>Стрельбище Valorant</strong> привязывает её к физике игры: моменту полной остановки, разбросу первой пули и хитбоксам моделей агентов.
+              </p>
+
+              <div class="space-y-2.5 rounded-xl border border-neutral-800 bg-[#131724] p-4 text-xs">
+                <div class="flex items-center justify-between font-bold text-white border-b border-neutral-800/80 pb-2">
+                  <span>Стрельбище (10-15 минут):</span>
+                  <span class="font-mono text-[11px] text-[#00f0ff]">Ежедневно НЕ ПРОПУСКАТЬ!</span>
+                </div>
+                <ul class="space-y-2.5 text-neutral-300">
+                  <li class="flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-[#00f0ff] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                    <div><strong class="text-white">100 ботов с бронёй без движений, повторить 2-3 раза</strong></div>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-[#00f0ff] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                    <div><strong class="text-white">100 ботов со стрейфом, повторить 2 раза </strong></div>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-[#00f0ff] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                    <div><strong class="text-white">Тест реакции на Средний либо Тяжёлый, повторить 10-15 раз:</strong> </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Разделитель 3: Deathmatch -->
+      <div class="relative w-full overflow-hidden py-6 select-none">
+        <div class="relative mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+          <div class="relative h-[1px] flex-1 bg-gradient-to-r from-emerald-500/60 via-neutral-700 to-transparent"></div>
+          <div class="mx-4 flex items-center gap-2 rounded-lg border border-neutral-800 bg-[#121620] px-4 py-1.5 shadow-lg">
+            <span class="font-mono text-xs font-bold tracking-wider text-emerald-400">ЧАСТЬ 3</span>
+            <span class="text-neutral-600">/</span>
+            <span class="font-heading text-xs font-bold uppercase tracking-wider text-neutral-200">Deathmatch</span>
+          </div>
+          <div class="relative h-[1px] flex-1 bg-gradient-to-l from-emerald-500/60 via-neutral-700 to-transparent"></div>
+          <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+        </div>
+      </div>
+
+      <!-- ЧАСТЬ 3: DEATHMATCH -->
+      <section id="deathmatch" class="relative bg-[#151824] py-14 text-neutral-100 sm:py-20">
+        <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div class="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
+            
+            <div class="lg:col-span-6 space-y-5">
+              <div>
+                <div class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-semibold text-emerald-400">
+                  <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                  <span>ЭТАП 3:</span>
+                </div>
+                <h2 class="mt-3 font-heading text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                  Deathmatch внутри Valorant
+                </h2>
+              </div>
+
+              <p class="text-sm text-neutral-300 leading-relaxed">
+                <strong>Deathmatch - инструмент тренировки 1-на-1 дуэлей внутри игры</strong>
+              </p>
+
+              <div class="space-y-2.5 rounded-xl border border-neutral-800 bg-[#0e111a] p-4 text-xs">
+                <div class="flex items-center justify-between font-bold text-white border-b border-neutral-800/80 pb-2">
+                  <span>3 правила правильного Deathmatch:</span>
+                  <span class="font-mono text-[11px] text-emerald-400">от 2-5 матчей</span>
+                </div>
+                <ul class="space-y-2.5 text-neutral-300">
+                  <li class="flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-[#ff4655] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/></svg>
+                    <div><strong class="text-white">Игра полностью БЕЗ звука наушников:</strong> Снимите наушники или выключите звук игры. Мозг учится ориентироваться на 100% зрительно. В соревновательных матчах это дает колоссальное преимущество скорости реакции.</div>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-[#00f0ff] shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+                    <div><strong class="text-white">Только One Taps:</strong> Запрещен любой зажим. Если первая пуля не попала в голову — стрейф, микро-доводка, второй выстрел.</div>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <svg class="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                    <div><strong class="text-white">Pre-Aiming и зазор от стены:</strong> Двигайтесь по карте, держа прицел строго на высоте головы и с зазором 120-150px от угла для нейтрализации широкого пика.</div>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="pt-1 flex items-center gap-3">
+                <button type="button" onclick="openSurveyModal()" class="flex items-center gap-2 rounded-xl bg-[#ff4655] px-6 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-[#ff4655]/20 hover:bg-[#ff5866] transition-all active:scale-95">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                  <span>Заполнить анкету</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Видео Deathmatch -->
+            <div class="lg:col-span-6">
+              <div class="group relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-[#10131b] shadow-2xl shadow-emerald-500/10">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800/80 bg-[#131722]/90 px-4 py-2.5">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-block h-2 w-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                    <span class="font-heading text-xs font-bold text-white truncate">Видео: Методика разминки в Deathmatch</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+
+                  </div>
+                </div>
+
+                <div class="relative aspect-video w-full bg-black">
+                  <iframe id="dmVideoIframe" src="https://www.youtube.com/embed/Md9kkTt8o3s?autoplay=1&mute=1&playsinline=1&enablejsapi=1&loop=1&playlist=Md9kkTt8o3s&rel=0" class="h-full w-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+
+                <div class="flex items-center justify-between border-t border-neutral-800/80 bg-[#12151e] px-4 py-2 text-xs text-neutral-400">
+                  <span class="font-mono text-[11px]">Практика дуэлей 1v1 без звука</span>
+                  <button type="button" onclick="copyCurrentVideoUrl('dmVideoIframe', this)" class="hover:text-white">YouTube URL</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Категория 4 для демонстрации javascript -->
+      <div class="relative w-full overflow-hidden py-6 select-none">
+        <div class="relative mx-auto flex max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+          <div class="relative h-[1px] flex-1 bg-gradient-to-r from-amber-500/60 via-neutral-700 to-transparent"></div>
+          <div class="mx-4 flex items-center gap-2 rounded-lg border border-neutral-800 bg-[#121620] px-4 py-1.5 shadow-lg">
+            <span class="font-mono text-xs font-bold tracking-wider text-amber-400">ЧАСТЬ 4</span>
+            <span class="text-neutral-600">/</span>
+            <span class="font-heading text-xs font-bold uppercase tracking-wider text-neutral-200">Результаты, календарь и прогресс</span>
+          </div>
+          <div class="relative h-[1px] flex-1 bg-gradient-to-l from-amber-500/60 via-neutral-700 to-transparent"></div>
+          <div class="h-2 w-2 rotate-45 border border-neutral-700 bg-neutral-900"></div>
+        </div>
+      </div>
+
+      <!-- СЕКЦИЯ 4: РЕЗУЛЬТАТЫ И КАЛЕНДАРЬ -->
+      <section id="progress" class="relative bg-[#0a0c10] py-14 text-neutral-100 sm:py-20">
+        <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16">
+          
+          <!-- Ожидаемые результаты -->
+          <div>
+            <div class="text-center space-y-3">
+              <span class="inline-block rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1 font-mono text-xs font-semibold text-emerald-400">РЕЗУЛЬТАТЫ И СТАТИСТИКА</span>
+              <h2 class="font-heading text-2xl font-extrabold tracking-tight text-white sm:text-4xl">Как улучшатся ваши результаты после тренировок</h2>
+              <p class="mx-auto max-w-2xl text-xs sm:text-sm text-neutral-400">По замерам выпускников методики при ежедневных 35-минутных тренировках на протяжении 30 дней:</p>
+            </div>
+
+            <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="card-hover rounded-2xl border border-neutral-800 bg-[#121520] p-5 text-center hover:border-emerald-500/50 hover:bg-[#141824]">
+                <div class="text-xs text-neutral-400">Точность в голову (Headshot %)</div>
+                <div class="mt-2 font-mono text-3xl font-extrabold text-white">28% – 32%</div>
+                <div class="mt-1 text-xs text-emerald-400 font-bold">+98% прирост точности</div>
+                <p class="mt-2.5 text-[11px] text-neutral-400 leading-relaxed">Снижается число случайных выстрелов в тело.</p>
+              </div>
+
+              <div class="card-hover rounded-2xl border border-neutral-800 bg-[#121520] p-5 text-center hover:border-[#00f0ff]/50 hover:bg-[#141824]">
+                <div class="text-xs text-neutral-400">Время первого выстрела (TTK)</div>
+                <div class="mt-2 font-mono text-3xl font-extrabold text-[#00f0ff]">~190 мс</div>
+                <div class="mt-1 text-xs text-[#00f0ff] font-bold">Было: ~380 мс (-50%)</div>
+                <p class="mt-2.5 text-[11px] text-neutral-400 leading-relaxed">Вы начинаете нажимать выстрел быстрее соперника.</p>
+              </div>
+
+              <div class="card-hover rounded-2xl border border-neutral-800 bg-[#121520] p-5 text-center hover:border-[#ff4655]/50 hover:bg-[#141824]">
+                <div class="text-xs text-neutral-400">Победы в дуэлях 1 на 1</div>
+                <div class="mt-2 font-mono text-3xl font-extrabold text-[#ff4655]">67%</div>
+                <div class="mt-1 text-xs text-[#ff4655] font-bold">Было: 33%</div>
+                <p class="mt-2.5 text-[11px] text-neutral-400 leading-relaxed">Больше выигранных дуэлей = больше выигранных раундов.</p>
+              </div>
+
+              <div class="card-hover rounded-2xl border border-neutral-800 bg-[#121520] p-5 text-center hover:border-amber-400/50 hover:bg-[#141824]">
+                <div class="text-xs text-neutral-400">Рост рейтинга в соревновательном</div>
+                <div class="mt-2 font-mono text-3xl font-extrabold text-amber-400">+2-3 ранга</div>
+                <div class="mt-1 text-xs text-amber-400 font-bold">За месяц.</div>
+                <p class="mt-2.5 text-[11px] text-neutral-400 leading-relaxed">Стабильный подъем без затяжных лузстриков и зависимости от рандомных тиммейтов.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Интерактивный Календарь -->
+          <div class="rounded-2xl border border-neutral-800 bg-[#11141e] p-6 sm:p-8 shadow-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-5">
+              <div>
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff4655]/20 text-[#ff4655]">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                  <h3 class="font-heading text-lg font-bold text-white tracking-wide">Интерактивный календарь тренировок</h3>
+                </div>
+                <p class="text-xs text-neutral-400 mt-1">Кликайте по дням недели и отмечайте выполненные тренировки галочками (сохраняется в браузере):</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-400 font-bold">
+                  <svg class="h-4 w-4 fill-amber-400 text-amber-400" viewBox="0 0 24 24"><path d="M12 2c-4 4-7 8.5-7 13a7 7 0 0 0 14 0c0-4.5-3-9-7-13z"/></svg>
+                  <span>Серия: <span id="streakCount">0</span> дней</span>
+                </div>
+                <div class="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-400 font-bold">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                  <span>Закрыто: <span id="completedDaysCount">0</span> из 7 дней (<span id="completedPct">0</span>%)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Дни недели -->
+            <div id="calendarDaysList" class="mt-6 grid grid-cols-2 sm:grid-cols-7 gap-2.5">
+              <!-- Генерируется через JS -->
+            </div>
+
+            <!-- Детали выбранного дня -->
+            <div class="mt-6 rounded-xl border border-neutral-800 bg-[#0c0e14] p-5 space-y-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-800/80 pb-3">
+                <div>
+                  <span id="selectedDayTitle" class="font-heading text-xs font-bold uppercase tracking-wider text-white">Понедельник (День 1)</span>
+                  <span class="ml-3 text-xs text-neutral-400">Выполнено этапов: <strong id="selectedDayProgress" class="text-emerald-400">0 из 3</strong></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="completeAllDayDrills()" class="flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500 hover:text-black transition-colors">
+                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344"/><path d="m9 11 3 3L22 4"/></svg>
+                    <span>Отметить всё (3/3)</span>
+                  </button>
+                  <button type="button" onclick="resetDayDrills()" class="flex items-center gap-1 rounded-lg border border-neutral-700 px-3 py-1.5 text-xs text-neutral-400 hover:text-white transition-colors">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    <span>Сброс</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3 чекбокса упражнений дня -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div id="checkCardKovaak" onclick="toggleDrill('kovaak')" class="flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all border-neutral-800 bg-[#131622] hover:border-neutral-700">
+                  <div class="flex items-center gap-3">
+                    <span id="checkIconKovaak" class="h-5 w-5 rounded-full border border-neutral-600 flex items-center justify-center"></span>
+                    <div>
+                      <div class="text-xs font-bold text-white">1. KovaaK (15-20 мин)</div>
+                      <div class="text-[11px] text-neutral-400">Pasu Small + 1wall6targets</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="checkCardRange" onclick="toggleDrill('range')" class="flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all border-neutral-800 bg-[#131622] hover:border-neutral-700">
+                  <div class="flex items-center gap-3">
+                    <span id="checkIconRange" class="h-5 w-5 rounded-full border border-neutral-600 flex items-center justify-center"></span>
+                    <div>
+                      <div class="text-xs font-bold text-white">2. Стрельбище (10-15 мин)</div>
+                      <div class="text-[11px] text-neutral-400">A-D стрейфы + 50 ботов</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="checkCardDm" onclick="toggleDrill('deathmatch')" class="flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all border-neutral-800 bg-[#131622] hover:border-neutral-700">
+                  <div class="flex items-center gap-3">
+                    <span id="checkIconDm" class="h-5 w-5 rounded-full border border-neutral-600 flex items-center justify-center"></span>
+                    <div>
+                      <div class="text-xs font-bold text-white">3. Deathmatch (2-3 игры)</div>
+                      <div class="text-[11px] text-neutral-400">Только One-Taps БЕЗ звука</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- График роста показателей точности (HS Rate %) -->
+          <div class="rounded-2xl border border-neutral-800 bg-[#11141e] p-6 sm:p-8 shadow-2xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-5">
+              <div>
+                <div class="flex items-center gap-2.5">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#00f0ff]/20 text-[#00f0ff]">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                  </div>
+                  <h3 class="font-heading text-lg font-bold text-white tracking-wide">График роста показателей точности (HS Rate %)</h3>
+                </div>
+                <p class="text-xs text-neutral-400 mt-1">Динамика попаданий в голову после каждого тренировочного цикла:</p>
+              </div>
+
+              <!-- Форма добавления нового замера -->
+              <form onsubmit="addHsRecord(event)" class="flex items-center gap-2">
+                <span class="text-xs text-neutral-400">Новый замер HS%:</span>
+                <input id="newHsInput" type="number" min="5" max="100" value="38" placeholder="%" class="w-16 rounded-lg border border-neutral-700 bg-[#0c0e14] px-2.5 py-1.5 text-xs font-mono font-bold text-white focus:border-[#ff4655] focus:outline-none" required />
+                <button type="submit" class="flex items-center gap-1 rounded-lg bg-[#ff4655] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#ff5866] transition-all">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>Добавить</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- SVG График -->
+            <div class="mt-8">
+              <div class="h-56 w-full">
+                <svg id="hsChartSvg" class="h-full w-full" viewBox="0 0 620 200">
+                  <!-- Горизонтальные направляющие сетки -->
+                  <line x1="30" y1="0" x2="590" y2="0" stroke="#1e2433" stroke-width="1" stroke-dasharray="4 4"/>
+                  <line x1="30" y1="50" x2="590" y2="50" stroke="#1e2433" stroke-width="1" stroke-dasharray="4 4"/>
+                  <line x1="30" y1="100" x2="590" y2="100" stroke="#1e2433" stroke-width="1" stroke-dasharray="4 4"/>
+                  <line x1="30" y1="150" x2="590" y2="150" stroke="#1e2433" stroke-width="1" stroke-dasharray="4 4"/>
+                  <defs>
+                    <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#ff4655" stop-opacity="0.25"/>
+                      <stop offset="100%" stop-color="#ff4655" stop-opacity="0.0"/>
+                    </linearGradient>
+                  </defs>
+                  <path id="chartAreaPath" d="" fill="url(#areaGradient)"/>
+                  <path id="chartLinePath" d="" fill="none" stroke="#ff4655" stroke-width="3"/>
+                  <g id="chartPointsGroup"></g>
+                </svg>
+              </div>
+
+              <div class="mt-4 flex flex-wrap items-center justify-between border-t border-neutral-800/80 pt-3 text-xs text-neutral-400">
+                <div>Текущий рекордный замер: <strong id="bestHsRecord" class="text-emerald-400 font-mono text-sm">36% Headshot Rate</strong></div>
+                <div class="text-[11px] text-neutral-500">Замеры обновляются в реальном времени. Нажимайте «Добавить» для внесения статистики матчей.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Нижний CTA баннер -->
+          <div class="text-center pt-4 space-y-4">
+            <div class="inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-[#121520] px-4 py-1.5 text-xs text-neutral-300">
+              <svg class="h-3.5 w-3.5 text-[#ff4655]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>
+              <span>Готовы повысить сой ранг?</span>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <button type="button" onclick="openSurveyModal()" class="rounded-xl bg-[#ff4655] px-8 py-3.5 text-sm font-bold uppercase tracking-wider text-white shadow-xl shadow-[#ff4655]/30 hover:bg-[#ff5866] active:scale-95 transition-all">
+                Заполнить анкету игрока
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+
+    <!-- Подвал сайта нет тут нет детей -->
+    <footer class="border-t border-neutral-800/80 bg-[#06080c] py-12 text-neutral-400">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-neutral-800/60 pb-8">
+          <div class="flex items-center gap-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff4655] text-white shadow-md shadow-[#ff4655]/30">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
+            <div>
+              <span class="font-heading text-lg font-bold text-white tracking-wider">VALORANT<span class="text-[#ff4655]">AIM</span> HELPER</span>
+              <div class="text-[11px] text-neutral-500">Система развития аима в компьютерной видеоигре Valorant</div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-neutral-300 font-medium">
+            <a href="#hero" class="hover:text-white transition-colors">Методика</a>
+            <a href="#kovaak" class="hover:text-[#ff4655] transition-colors">1. KovaaK</a>
+            <a href="#range" class="hover:text-[#00f0ff] transition-colors">2. Стрельбище</a>
+            <a href="#deathmatch" class="hover:text-emerald-400 transition-colors">3. Deathmatch</a>
+            <a href="#progress" class="hover:text-white transition-colors">4. Прогресс & Календарь</a>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="openSensModal()" class="text-xs text-[#00f0ff] hover:underline">eDPI Калькулятор</button>
+            <button type="button" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-[#0f121a] px-3 py-1.5 text-xs text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors">
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+              <span>Наверх</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
+          <p>© 2026 Author: Matvey Antipin Все права защищены.</p>
+          <p class="text-[11px] max-w-lg text-center sm:text-right text-neutral-600">VALORANT является зарегистрированным товарным знаком Riot Games, Inc. Данная методика создана сообществом игроков и не аффилирована напрямую с Riot Games.</p>
+        </div>
+      </div>
+    </footer>
+
+
+    <!-- JAVASKCRIPT ПОЛНОСТЬЮ ЗАВИСИМЫЕ И ОТДЕЛЬНЫЕ ЭЛЕМЕНТЫ САЙТА ДЛЯ ПОДКЛЮЧЕНИЯ: -->
+
+    
+    <!-- Плавающий быстрый виджет снизу справа (Desktop) -->
+    <div class="fixed bottom-5 right-5 z-40 hidden md:flex items-center gap-2 rounded-2xl border border-neutral-800 bg-[#10141e]/90 p-1.5 shadow-2xl backdrop-blur-md">
+      <button type="button" onclick="openReactionModal()" class="flex items-center gap-1.5 rounded-xl border border-neutral-700/80 bg-neutral-800/80 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition-colors hover:border-emerald-400 hover:text-white" title="Тест реакции">
+        <span class="text-emerald-400">⚡</span>
+        <span>Тест реакции</span>
+      </button>
+      <button type="button" onclick="openTimerModal()" class="flex items-center gap-1.5 rounded-xl border border-neutral-700/80 bg-neutral-800/80 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition-colors hover:border-[#ff4655] hover:text-white" title="Запустить таймер на 35 минут">
+        <svg class="h-3.5 w-3.5 text-[#ff4655]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="14" r="8"/><line x1="12" x2="15" y1="14" y2="11"/></svg>
+        <span>Таймер 35м</span>
+      </button>
+      <button type="button" onclick="openSensModal()" class="flex items-center gap-1.5 rounded-xl border border-neutral-700/80 bg-neutral-800/80 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition-colors hover:border-[#00f0ff] hover:text-white" title="Рассчитать eDPI и cm/360">
+        <svg class="h-3.5 w-3.5 text-[#00f0ff]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/></svg>
+        <span>eDPI</span>
+      </button>
+    </div>
+
+    <!-- Всплывающее уведомление (Toast) -->
+    <div id="toast" class="pointer-events-none fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl border border-[#ff4655] bg-[#141824] px-4 py-3 text-xs font-semibold text-white shadow-2xl backdrop-blur-md opacity-0 translate-y-6">
+      <svg class="h-4 w-4 text-[#ff4655] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="toastMessage">Сообщение</span>
+    </div>
+
+    <!-- Canvas для легких конфетти -->
+    <canvas id="confettiCanvas" class="pointer-events-none fixed inset-0 z-50 hidden"></canvas>
+
+    <!-- МОДАЛЬНОЕ ОКНО: ТЕСТ РЕАКЦИИ (NEW JS BEAUTY FEATURE) -->
+    <div id="reactionModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 p-3 sm:p-6 backdrop-blur-md">
+      <div class="relative w-full max-w-md rounded-2xl border border-neutral-800 bg-[#10131d] p-6 text-center shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-emerald-400">⚡</span>
+            <h3 class="font-heading text-sm font-bold text-white uppercase tracking-wider">Valorant Reaction Benchmark</h3>
+          </div>
+          <button type="button" onclick="closeReactionModal()" class="rounded p-1 text-neutral-400 hover:text-white">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div id="reactionBox" onclick="handleReactionBoxClick()" class="cursor-pointer select-none rounded-xl border-2 border-dashed border-neutral-700 bg-[#161a26] py-14 px-4 transition-all hover:border-[#00f0ff]">
+          <div id="reactionIcon" class="mx-auto mb-2 text-3xl">🎯</div>
+          <div id="reactionMainText" class="font-heading text-lg font-bold text-white">Кликните сюда для старта</div>
+          <div id="reactionSubText" class="mt-1 text-xs text-neutral-400">Когда экран станет зелёным — кликайте как можно быстрее!</div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-neutral-400 border-t border-neutral-800/80 pt-3">
+          <span>Лучший замер: <strong id="reactionBestScore" class="font-mono text-emerald-400">---</strong></span>
+          <button type="button" onclick="closeReactionModal()" class="rounded-lg bg-neutral-800 px-3 py-1.5 text-xs text-white hover:bg-neutral-700">Закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО 1: АНКЕТА ИГРОКА -->
+    <div id="surveyModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 p-3 sm:p-6 backdrop-blur-md">
+      <div class="relative w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#121520] p-6 sm:p-8 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-neutral-800 pb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff4655]/20 text-[#ff4655]">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            </div>
+            <h3 class="font-heading text-base font-bold text-white tracking-wide">Анкета игрока по тренировке аима</h3>
+          </div>
+          <button type="button" onclick="closeSurveyModal()" class="rounded p-1.5 text-neutral-400 hover:text-white">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Успешное состояние -->
+        <div id="surveySuccessView" class="hidden py-8 text-center space-y-4">
+          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+            <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <h4 class="font-heading text-xl font-bold text-white">Анкета успешно принята!</h4>
+          <p class="mx-auto max-w-sm text-xs sm:text-sm text-neutral-300 leading-relaxed">Спасибо за отправку данных. Вы можете следовать 3 этапам методики и ежедневно отмечать прогресс в календаре.</p>
+          <div class="pt-2">
+            <button type="button" onclick="closeSurveyModal()" class="rounded-xl bg-[#ff4655] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#ff5866]">Закрыть окно</button>
+          </div>
+        </div>
+
+        <!-- Форма -->
+        <form id="surveyForm" onsubmit="handleSurveySubmit(event)" class="mt-5 space-y-3.5">
+          <div>
+            <label class="text-xs text-neutral-400">Ваше имя или игровой никнейм:</label>
+            <input type="text" required placeholder="TenZ_Student / Jett" class="mt-1 w-full rounded-xl border border-neutral-700 bg-[#0a0d13] px-3.5 py-2.5 text-xs text-white focus:border-[#ff4655] focus:outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-neutral-400">Текущий ранг:</label>
+              <select class="mt-1 w-full rounded-xl border border-neutral-700 bg-[#0a0d13] px-3 py-2.5 text-xs text-white focus:border-[#ff4655] focus:outline-none">
+                <option value="Железо">Железо (Iron)</option>
+                <option value="Бронза">Бронза (Bronze)</option>
+                <option value="Серебро">Серебро (Silver)</option>
+                <option value="Золото" selected>Золото (Gold)</option>
+                <option value="Платина">Платина (Platinum)</option>
+                <option value="Алмаз">Алмаз (Diamond)</option>
+                <option value="Расцвет">Расцвет (Ascendant)</option>
+                <option value="Бессмертный">Бессмертный (Immortal)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-neutral-400">Время на тренировку:</label>
+              <select class="mt-1 w-full rounded-xl border border-neutral-700 bg-[#0a0d13] px-3 py-2.5 text-xs text-white focus:border-[#ff4655] focus:outline-none">
+                <option value="20 минут">20 минут в день</option>
+                <option value="35 минут" selected>35 минут (норма)</option>
+                <option value="50 минут">50 минут</option>
+                <option value="1 час+">Более 1 часа</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-neutral-400">Чувствительность (DPI / Sens):</label>
+            <input type="text" value="800 DPI, sens 0.32" class="mt-1 w-full rounded-xl border border-neutral-700 bg-[#0a0d13] px-3.5 py-2.5 text-xs text-white focus:border-[#ff4655] focus:outline-none" />
+          </div>
+
+          <div>
+            <label class="text-xs text-neutral-400">Главное узкое горлышко в стрельбе:</label>
+            <select class="mt-1 w-full rounded-xl border border-neutral-700 bg-[#0a0d13] px-3 py-2.5 text-xs text-white focus:border-[#ff4655] focus:outline-none">
+              <option value="Микро-доводка до головы" selected>Микро-доводка до головы (промах первым выстрелом)</option>
+              <option value="Привычка спреить">Привычка сразу зажимать спрей с Vandal</option>
+              <option value="Стрельба на бегу">Стрельба до завершения контр-стрейфа (Movement Error)</option>
+              <option value="Паника и тремор">Паника и тремор руки при внезапном контакте 1v1</option>
+              <option value="Позиционирование">Прицел падает на уровень груди / пола</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs text-neutral-400">Дополнительные комментарии:</label>
+            <textarea rows="2" placeholder="Какие цели ставите на сезон..." class="mt-1 w-full rounded-xl border border-neutral-700 bg-[#0a0d13] px-3.5 py-2 text-xs text-white focus:border-[#ff4655] focus:outline-none"></textarea>
+          </div>
+
+          <div class="pt-3 flex justify-end gap-2.5">
+            <button type="button" onclick="closeSurveyModal()" class="rounded-xl px-4 py-2 text-xs text-neutral-400 hover:text-white">Отмена</button>
+            <button type="submit" class="flex items-center gap-2 rounded-xl bg-[#ff4655] px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-[#ff4655]/30 hover:bg-[#ff5866] active:scale-95 transition-all">
+              <span>Отправить</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО 2: КАЛЬКУЛЯТОР eDPI -->
+    <div id="sensModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 p-3 sm:p-6 backdrop-blur-md">
+      <div class="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-[#0e1118] shadow-2xl">
+        <div class="flex items-center justify-between border-b border-neutral-800 bg-[#121620] px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#ff4655]/20 text-[#ff4655]">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/></svg>
+            </div>
+            <div>
+              <h3 class="font-heading text-lg font-bold text-white tracking-wide">Калькулятор чувствительности & eDPI</h3>
+              <p class="text-xs text-neutral-400">Оптимизация сенсы, замер cm/360 и сравнение с конфигами про-игроков</p>
+            </div>
+          </div>
+          <button type="button" onclick="closeSensModal()" class="rounded-lg p-2 text-neutral-400 hover:bg-neutral-800 hover:text-white">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- DPI -->
+            <div class="rounded-xl border border-neutral-800 bg-[#131722] p-4">
+              <label class="text-xs font-semibold uppercase tracking-wider text-neutral-400">DPI Мыши (сенсор):</label>
+              <div class="mt-2.5 grid grid-cols-4 gap-2">
+                <button type="button" onclick="setDpi(400)" class="dpi-btn rounded-lg py-2 text-xs font-bold border border-neutral-800 bg-[#0c0e14] text-neutral-400 hover:text-white">400</button>
+                <button type="button" onclick="setDpi(800)" class="dpi-btn active rounded-lg py-2 text-xs font-bold border border-[#ff4655] bg-[#ff4655]/20 text-white shadow">800</button>
+                <button type="button" onclick="setDpi(1200)" class="dpi-btn rounded-lg py-2 text-xs font-bold border border-neutral-800 bg-[#0c0e14] text-neutral-400 hover:text-white">1200</button>
+                <button type="button" onclick="setDpi(1600)" class="dpi-btn rounded-lg py-2 text-xs font-bold border border-neutral-800 bg-[#0c0e14] text-neutral-400 hover:text-white">1600</button>
+              </div>
+              <div class="mt-3 flex items-center gap-2">
+                <span class="text-[11px] text-neutral-500">Свой DPI:</span>
+                <input id="customDpiInput" type="number" min="100" max="6400" step="50" value="800" oninput="onCustomDpiInput(this.value)" class="w-24 rounded border border-neutral-700 bg-[#0c0e14] px-2 py-1 text-xs text-white" />
+              </div>
+            </div>
+
+            <!-- In-game Sens -->
+            <div class="rounded-xl border border-neutral-800 bg-[#131722] p-4">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold uppercase tracking-wider text-neutral-400">Сенса в Valorant:</label>
+                <span id="sensValueLabel" class="font-mono text-sm font-bold text-[#00f0ff]">0.32</span>
+              </div>
+              <input id="sensSlider" type="range" min="0.05" max="1.5" step="0.01" value="0.32" oninput="onSensSliderInput(this.value)" class="mt-3 w-full accent-[#00f0ff]" />
+              <div class="mt-2 flex items-center justify-between text-[11px] text-neutral-500">
+                <span>0.05 (Низкая)</span>
+                <span>0.35 (Баланс)</span>
+                <span>1.0+ (Высокая)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Результаты расчета -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-neutral-800 bg-gradient-to-br from-[#141824] to-[#0f121a] p-5 shadow-lg">
+              <span class="text-xs text-neutral-400">Ваш eDPI:</span>
+              <div class="mt-1 flex items-baseline gap-2">
+                <span id="edpiResult" class="font-mono text-3xl font-extrabold text-white">256</span>
+                <span class="text-xs text-neutral-400">DPI × Sens</span>
+              </div>
+              <div id="edpiCategoryBadge" class="mt-2 text-xs font-semibold text-[#00f0ff]">Золотой стандарт VCT Pro</div>
+              <p id="edpiVerdictText" class="mt-1.5 text-[11px] text-neutral-300 leading-relaxed">Идеальный баланс между скоростью микро-фликов кистью и контролем прицела.</p>
+            </div>
+
+            <div class="rounded-xl border border-neutral-800 bg-gradient-to-br from-[#141824] to-[#0f121a] p-5 shadow-lg">
+              <span class="text-xs text-neutral-400">Дистанция полного оборота на 360°:</span>
+              <div class="mt-1 flex items-baseline gap-2">
+                <span id="cm360Result" class="font-mono text-3xl font-extrabold text-emerald-400">51.1</span>
+                <span class="text-xs text-neutral-400">см / 360°</span>
+              </div>
+              <div class="mt-2 text-xs font-semibold text-neutral-300">Рекомендуемый размер коврика:</div>
+              <p id="padRecommendation" class="mt-1.5 text-[11px] text-neutral-400 leading-relaxed">Требуется большой ковер (XL: 48×40 см или Deskmat)</p>
+            </div>
+          </div>
+
+          <!-- Интерактивный предпросмотр прицела (New Visual Canvas) -->
+          <div class="rounded-xl border border-neutral-800 bg-[#10131d] p-4 text-center">
+            <div class="text-[11px] uppercase tracking-wider font-semibold text-neutral-400 mb-2">Интерактивный вид прицела (Live Crosshair Canvas):</div>
+            <div class="relative inline-block overflow-hidden rounded-lg border border-neutral-700 bg-black shadow-inner">
+              <canvas id="crosshairCanvas" width="220" height="120" class="block"></canvas>
+              <div id="crosshairLabel" class="absolute bottom-1 right-2 text-[10px] font-mono text-neutral-400">TenZ Style</div>
+            </div>
+          </div>
+
+          <!-- Пресеты профессионалов -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-neutral-300">Готовые настройки звезд VCT:</span>
+              <span class="text-[11px] text-neutral-500">Нажмите для применения</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- TenZ -->
+              <div onclick="applyProPreset(800, 0.30, 'TenZ')" class="group flex cursor-pointer items-center justify-between rounded-xl border border-neutral-800 bg-[#121620] p-3.5 hover:border-neutral-700 hover:bg-[#141926] transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-800 font-bold text-white group-hover:bg-[#ff4655] transition-colors">T</div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-heading text-sm font-bold text-white">TenZ</span>
+                      <span class="rounded bg-neutral-800 px-1.5 py-0.2 text-[10px] text-neutral-400">Sentinels</span>
+                    </div>
+                    <div class="text-[11px] text-neutral-400">800 DPI × 0.3 = <strong class="text-white">240 eDPI</strong></div>
+                  </div>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); copyText('0;s;1;P;c;5;h;0;m;1;0l;4;0o;2;0a;1;0f;0;1b;0', this)" class="flex items-center gap-1 rounded bg-neutral-800/80 px-2 py-1 text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors">
+                  <span>Код прицела</span>
+                </button>
+              </div>
+
+              <!-- Aspas -->
+              <div onclick="applyProPreset(800, 0.35, 'Aspas')" class="group flex cursor-pointer items-center justify-between rounded-xl border border-neutral-800 bg-[#121620] p-3.5 hover:border-neutral-700 hover:bg-[#141926] transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-800 font-bold text-white group-hover:bg-[#ff4655] transition-colors">A</div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-heading text-sm font-bold text-white">Aspas</span>
+                      <span class="rounded bg-neutral-800 px-1.5 py-0.2 text-[10px] text-neutral-400">Leviatán</span>
+                    </div>
+                    <div class="text-[11px] text-neutral-400">800 DPI × 0.35 = <strong class="text-white">280 eDPI</strong></div>
+                  </div>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); copyText('0;P;c;5;o;1;d;1;z;1;f;0;s;0;0b;0;1b;0', this)" class="flex items-center gap-1 rounded bg-neutral-800/80 px-2 py-1 text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors">
+                  <span>Код прицела</span>
+                </button>
+              </div>
+
+              <!-- Demon1 -->
+              <div onclick="applyProPreset(1600, 0.10, 'Demon1')" class="group flex cursor-pointer items-center justify-between rounded-xl border border-neutral-800 bg-[#121620] p-3.5 hover:border-neutral-700 hover:bg-[#141926] transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-800 font-bold text-white group-hover:bg-[#ff4655] transition-colors">D</div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-heading text-sm font-bold text-white">Demon1</span>
+                      <span class="rounded bg-neutral-800 px-1.5 py-0.2 text-[10px] text-neutral-400">NRG</span>
+                    </div>
+                    <div class="text-[11px] text-neutral-400">1600 DPI × 0.1 = <strong class="text-white">160 eDPI</strong></div>
+                  </div>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); copyText('0;s;1;P;o;1;d;1;0b;0;1b;0', this)" class="flex items-center gap-1 rounded bg-neutral-800/80 px-2 py-1 text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors">
+                  <span>Код прицела</span>
+                </button>
+              </div>
+
+              <!-- Chronicle -->
+              <div onclick="applyProPreset(800, 0.29, 'Chronicle')" class="group flex cursor-pointer items-center justify-between rounded-xl border border-neutral-800 bg-[#121620] p-3.5 hover:border-neutral-700 hover:bg-[#141926] transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-800 font-bold text-white group-hover:bg-[#ff4655] transition-colors">C</div>
+                  <div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-heading text-sm font-bold text-white">Chronicle</span>
+                      <span class="rounded bg-neutral-800 px-1.5 py-0.2 text-[10px] text-neutral-400">Fnatic</span>
+                    </div>
+                    <div class="text-[11px] text-neutral-400">800 DPI × 0.29 = <strong class="text-white">232 eDPI</strong></div>
+                  </div>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); copyText('0;P;c;1;h;0;0l;4;0o;0;0a;1;0f;0;1b;0', this)" class="flex items-center gap-1 rounded bg-neutral-800/80 px-2 py-1 text-[10px] font-semibold text-neutral-300 hover:bg-neutral-700 hover:text-white transition-colors">
+                  <span>Код прицела</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-neutral-800 bg-[#121620] px-6 py-3.5 flex items-center justify-between">
+          <div class="text-[11px] text-neutral-400">Для стабильного роста не рекомендуется менять сенсу чаще 1 раза в 2 недели.</div>
+          <button type="button" onclick="closeSensModal()" class="rounded-lg bg-[#ff4655] px-5 py-2 text-xs font-bold uppercase text-white hover:bg-[#ff5866] transition-all">Готово</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО 3: ТАЙМЕР ТРЕНИРОВКИ (35 МИНУТ) -->
+    <div id="timerModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 p-3 sm:p-6 backdrop-blur-md">
+      <div class="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-[#0e1118] shadow-2xl">
+        <div class="flex items-center justify-between border-b border-neutral-800 bg-[#131722] px-6 py-4">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff4655]/20 text-[#ff4655]">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="14" r="8"/><line x1="12" x2="15" y1="14" y2="11"/></svg>
+            </div>
+            <div>
+              <h3 class="font-heading text-base font-bold text-white tracking-wide">Таймер тренировочного протокола (35 мин)</h3>
+              <p class="text-xs text-neutral-400">Запустите таймер перед началом разминки для строгого тайминга</p>
+            </div>
+          </div>
+          <button type="button" onclick="closeTimerModal()" class="rounded p-1.5 text-neutral-400 hover:text-white">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Переключатель 3 этапов в таймере -->
+        <div class="flex border-b border-neutral-800 bg-[#0f121a] p-3 gap-2 overflow-x-auto">
+          <button type="button" onclick="switchTimerStage(0)" id="timerTab0" class="timer-tab active flex-1 min-w-[120px] rounded-lg border py-2 px-3 text-left transition-all border-[#ff4655] bg-[#ff4655]/10 text-white">
+            <div class="text-[10px] font-mono uppercase text-[#ff4655]">Этап 1</div>
+            <div class="text-xs font-bold truncate">KovaaK (15м)</div>
+          </button>
+          <button type="button" onclick="switchTimerStage(1)" id="timerTab1" class="timer-tab flex-1 min-w-[120px] rounded-lg border py-2 px-3 text-left transition-all border-neutral-800 bg-[#141722] text-neutral-400">
+            <div class="text-[10px] font-mono uppercase text-neutral-500">Этап 2</div>
+            <div class="text-xs font-bold truncate">Стрельбище (10м)</div>
+          </button>
+          <button type="button" onclick="switchTimerStage(2)" id="timerTab2" class="timer-tab flex-1 min-w-[120px] rounded-lg border py-2 px-3 text-left transition-all border-neutral-800 bg-[#141722] text-neutral-400">
+            <div class="text-[10px] font-mono uppercase text-neutral-500">Этап 3</div>
+            <div class="text-xs font-bold truncate">Deathmatch (10м)</div>
+          </button>
+        </div>
+
+        <div class="p-6 text-center space-y-5">
+          <div class="space-y-1">
+            <span id="timerStageBadge" class="inline-block rounded-full border px-3 py-1 font-mono text-xs font-semibold text-[#ff4655] border-[#ff4655]/40 bg-[#ff4655]/10">
+              Этап 1: KovaaK Aim Trainer
+            </span>
+            <div id="timerDisplay" class="font-mono text-6xl font-extrabold tracking-tight text-white sm:text-7xl">15:00</div>
+          </div>
+
+          <div class="mx-auto max-w-sm">
+            <div class="h-2 w-full overflow-hidden rounded-full bg-neutral-800">
+              <div id="timerProgressBar" class="h-full bg-gradient-to-r from-[#ff4655] to-[#00f0ff] transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="mt-1 flex justify-between text-[11px] text-neutral-500 font-mono">
+              <span>0:00</span>
+              <span id="timerPctLabel">0% завершено</span>
+              <span id="timerMaxLabel">15:00</span>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-neutral-800 bg-[#121520] p-4 text-left space-y-2">
+            <div class="flex items-center gap-2 text-xs font-bold text-white">
+              <svg class="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+              <span>Главный фокус этапа: <span id="timerStageFocus" class="text-neutral-300 font-normal">Кучность > 92%, без резких рывков</span></span>
+            </div>
+            <p id="timerStageDesc" class="text-xs text-neutral-300 leading-relaxed">Изолированная отработка Pasu Small Reload и 1wall6targets TE. 100% фокус на точности и микро-доворотах.</p>
+          </div>
+
+          <div class="flex items-center justify-center gap-3 pt-2">
+            <button id="timerToggleBtn" type="button" onclick="toggleTimer()" class="flex items-center gap-2 rounded-xl bg-[#ff4655] px-7 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-lg hover:bg-[#ff5866] transition-all">
+              <span id="timerToggleLabel">Старт</span>
+            </button>
+            <button type="button" onclick="resetTimer()" class="flex items-center gap-1.5 rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-xs font-semibold text-neutral-300 hover:text-white transition-all">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              <span>Сброс</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
